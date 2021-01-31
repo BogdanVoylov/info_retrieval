@@ -1,0 +1,16 @@
+{
+    "query":{
+        "op":"OR",
+        "args": [
+            {
+                "type":"WORD",
+                "arg":"horesback"
+            },
+            {
+                "type":"WORD",
+                "arg":"sunglass"
+            }
+        ]
+        
+    }
+}

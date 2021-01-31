@@ -1,0 +1,24 @@
+{
+    "query":{
+        "op":"AND",
+        "args": [
+            {
+                "type":"OPERATOR",
+                "arg":{
+                    "op":"NOT",
+                    "args": [
+                        {
+                            "type":"WORD",
+                            "arg":"A620"
+                        }
+                    ]
+                }
+            },
+            {
+                "type":"WORD",
+                "arg":"raunchiness"
+            }
+        ]
+        
+    }
+}
