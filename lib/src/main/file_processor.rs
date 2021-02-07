@@ -1,11 +1,13 @@
+use filebuffer::FileBuffer;
 use std::{
     fs::File,
-    io::{ BufRead, BufReader },
+    io::{BufRead, BufReader},
     string::String,
+    vec::Vec,
 };
 
 pub trait FileProcessor {
-    fn process<F: Fn(std::vec::Vec<u8>)>(&self, process: F);
+    fn process(&self) -> Vec<u8>;
     fn name(&self) -> String;
 }
 
@@ -26,23 +28,8 @@ impl ChunkFileProcessor {
 }
 
 impl FileProcessor for ChunkFileProcessor {
-    fn process<F: Fn(std::vec::Vec<u8>)>(&self, process: F) {
-        let input_file = &self.file;
-        let mut reader = BufReader::with_capacity(self.buff_size, input_file);
-        let mut ending = Vec::<u8>::new();
-        loop {
-            let buffer: &[u8] = reader.fill_buf().unwrap();
-            let mut buff_vec = ending.clone();
-            if buffer.len() == 0 {
-                process(buff_vec);
-                break;
-            }
-            buff_vec.extend_from_slice(buffer);
-            ending = get_end(&mut buff_vec);
-            process(buff_vec);
-            /* writer.write_all(&buffer).unwrap(); */
-            reader.consume(self.buff_size);
-        }
+    fn process(&self) -> Vec<u8> {
+        FileBuffer::open(self.name()).unwrap().as_ref().to_owned()
     }
 
     fn name(&self) -> std::string::String {
