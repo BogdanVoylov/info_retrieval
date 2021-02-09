@@ -1,4 +1,4 @@
-use lib::main::collection::{biword_index::*, coors_index::*, traits::GET, *};
+use lib::main::collection::{kgram_index::*, prefix_index::*, *, permuterm_index::*};
 
 use std::io::{prelude::*, stdin, stdout, LineWriter};
 use std::{env, fs, fs::File, time::SystemTime};
@@ -8,134 +8,99 @@ fn main() {
 
     println!("{:?}", args);
 
-    let need_update = args.contains(&"-p".to_owned());
-    let enable_coors = args.contains(&"-c".to_owned());
-
-    let mut index: Box<dyn MultipleFileIndex> = if enable_coors {
-        Box::new(MultipleFileCoorsIndex::new())
+    if args.contains(&"-p".to_owned()){
+        process_prefix();
+    } else if args.contains(&"-k".to_owned()){
+        process_kgram();
     } else {
-        Box::new(MultipleFileBiwordIndex::new())
-    };
-    if need_update {
-        proccess_files(&mut index);
-    }
-
-    if enable_coors {
-        exec_query_coors("MultipleFileCoorsIndex.json");
-    } else {
-        exec_query_biword("MultipleFileBiwordIndex.json")
+        process_permuterm();
     }
 
     /*  main::process_concurrent(&files, BUFF_SIZE) */
 }
 
-fn proccess_files(index: &mut Box<dyn MultipleFileIndex>) {
+fn process_prefix() {
     let paths = fs::read_dir("./data").unwrap();
     let mut files = Vec::<String>::new();
     for path in paths {
         files.push(path.unwrap().path().to_str().unwrap().to_owned());
     }
-    const KB_SIZE: usize = 1024;
 
-    const MB_SIZE: usize = KB_SIZE * KB_SIZE;
+    let mut index = PrefixIndex::new();
 
-    const BUFF_SIZE: usize = 1 * MB_SIZE;
+    index.process_concurrent(&files, 0);
 
-    index.process_concurrent(&files, BUFF_SIZE);
+    loop {
+        let mut q = r_l("> ");
+        q.truncate(q.len() - 1);
+        let res = index.get(q);
+        println!("{}", res.len());
+        println!("{:?}", res);
+    }
+}
 
-    let after_merge = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
+fn process_kgram() {
+    let paths = fs::read_dir("./data").unwrap();
+    let mut files = Vec::<String>::new();
+    for path in paths {
+        files.push(path.unwrap().path().to_str().unwrap().to_owned());
+    }
 
+    let mut index = MultipleFileKgramIndex::new();
+
+    index.process_concurrent(&files, 0);
+
+    save_index(&index);
+
+    loop {
+        let mut q = r_l("> ");
+        q.truncate(q.len() - 1);
+        let start = ms();
+        let res = index.get(q);
+        let res_str = serde_json::to_string_pretty(&res).unwrap();
+        let end = ms();
+        println!("{}", res_str);
+        println!("result len: {}", res.len());
+        println!("completed in {} ms",end-start);
+    }
+}
+
+fn process_permuterm() {
+    let paths = fs::read_dir("./data").unwrap();
+    let mut files = Vec::<String>::new();
+    for path in paths {
+        files.push(path.unwrap().path().to_str().unwrap().to_owned());
+    }
+
+    let mut index = MultipleFilePermutermIndex::new();
+
+    index.process_concurrent(&files, 0);
+
+    save_index(&index);
+
+    loop {
+        let mut q = r_l("> ");
+        q.truncate(q.len() - 1);
+        let start = ms();
+        let res = index.get(q);
+        let res_str = serde_json::to_string_pretty(&res).unwrap();
+        let end = ms();
+        println!("{}", res_str);
+        println!("result len: {}", res.len());
+        println!("completed in {} ms",end-start);
+    }
+
+
+}
+
+fn save_index<T:MultipleFileIndex>(index:&T){
     let j = index.serialize();
-
-    let after_serialized = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-
-    println!("serialized in {} ms", after_serialized - after_merge);
 
     let file = File::create(index.name() + ".json").unwrap();
     let mut file = LineWriter::new(file);
 
     file.write_all(j.as_bytes());
     file.flush();
-}
-
-fn exec_query_biword(name: &str) {
-    let collection_str = std::fs::read_to_string(name).unwrap();
-    let data = std::fs::read_to_string("query.json").unwrap();
-
-    let collection_parsing_start = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-
-    let collection: MultipleFileBiwordIndex =
-        serde_json::from_str(collection_str.as_str()).unwrap();
-
-    let collection_parsing_end = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-
-    println!(
-        "parsed collection in {} ms",
-        collection_parsing_end - collection_parsing_start
-    );
-
-    loop {
-        let query = r_l("> ");
-        let res = collection.get(query.as_str());
-        println!("------ QUERY RESULT ------");
-        for r in res {
-            let (k, v) = r;
-            println!("{} {:?}", k, v);
-        }
-        let completed = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
-        println!("completed in {} ms", completed - collection_parsing_end);
-        println!("------ !QUERY RESULT ------")
-    }
-}
-
-fn exec_query_coors(name: &str) {
-    let collection_str = std::fs::read_to_string(name).unwrap();
-    let data = std::fs::read_to_string("query.json").unwrap();
-
-    let collection_parsing_start = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-
-    let collection: MultipleFileCoorsIndex = serde_json::from_str(collection_str.as_str()).unwrap();
-
-    let collection_parsing_end = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-
-    println!(
-        "parsed collection in {} ms",
-        collection_parsing_end - collection_parsing_start
-    );
-
-    loop {
-        let query_str = r_l("> ");
-        let res = collection.get(query_str.as_str());
-        println!("------ QUERY RESULT ------");
-        println!("{}", res);
-        let completed = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
-        println!("completed in {} ms", completed - collection_parsing_end);
-        println!("------ !QUERY RESULT ------")
-    }
 }
 
 fn r_l(t: &str) -> String {
@@ -145,4 +110,11 @@ fn r_l(t: &str) -> String {
     let mut stdin = stdin();
     stdin.read_line(&mut buffer).unwrap();
     buffer
+}
+
+fn ms() -> u128 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
 }

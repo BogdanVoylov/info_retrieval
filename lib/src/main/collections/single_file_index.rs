@@ -4,41 +4,45 @@ use std::{collections::{HashSet, HashMap}, str, string::String};
 
 use super::string_utils::*;
 
-pub trait SingleFileIndex <T: FileProcessor, V>{
-    fn from_file_processor(file_processor: T) -> Self;
+pub trait SingleFileIndex <V>{
     fn word_num(&self)->usize;
-    fn proccess(&mut self);
+    fn proccess(&mut self, fp: Box<dyn FileProcessor>);
     fn name(&self) -> String;
     fn data(&self) -> &V;
 }
 
-pub struct SingleFileBiwordIndex<T: FileProcessor> {
+pub struct SingleFileProcessor {
     set: HashSet<String>,
-    file_processor: T,
     word_num:usize,
+    name:String
 }
 
-impl <T:FileProcessor>SingleFileIndex<T, HashSet<String>> for SingleFileBiwordIndex<T> {
-    fn from_file_processor(file_processor: T) -> Self {
+impl SingleFileProcessor {
+    pub fn new() -> Self {
         Self {
             set: HashSet::new(),
-            file_processor,
-            word_num:0
+            word_num:0,
+            name:String::new()
         }
     }
+}
 
+impl SingleFileIndex<HashSet<String>> for SingleFileProcessor {
     fn word_num(&self)->usize{
         self.word_num
     }
 
-    fn proccess(&mut self) {
-        let buff = self.file_processor.process();
+    fn proccess(&mut self, fp: Box<dyn FileProcessor>) {
+        self.name = fp.name();
+        let buff = fp.process();
         let str_buff = str::from_utf8(buff.as_slice()).unwrap();
         let str_buff = StringUtils::replace_default(str_buff);
         let iter = str_buff.split_whitespace();
         let vec: Vec<&str> = iter.collect();
         self.word_num = vec.len();
-        self.set = vec.biword();
+        for s in vec {
+            self.set.insert(s.to_owned());
+        }
     }
 
     fn data(&self) -> &HashSet<String>{
@@ -46,53 +50,6 @@ impl <T:FileProcessor>SingleFileIndex<T, HashSet<String>> for SingleFileBiwordIn
     }
 
     fn name(&self) -> String {
-        self.file_processor.name()
-    }
-}
-
-
-pub struct SingleFileCoorsIndex<T: FileProcessor> {
-    map: HashMap<String,Vec<usize>>,
-    file_processor: T,
-    word_num:usize,
-}
-
-impl <T:FileProcessor>SingleFileIndex<T, HashMap<String,Vec<usize>>> for SingleFileCoorsIndex<T> {
-    fn from_file_processor(file_processor: T) -> Self {
-        Self {
-            map: HashMap::new(),
-            file_processor,
-            word_num:0
-        }
-    }
-
-    fn word_num(&self)->usize{
-        self.word_num
-    }
-
-    fn proccess(&mut self) {
-        let buff = self.file_processor.process();
-        let str_buff = str::from_utf8(buff.as_slice()).unwrap();
-        let str_buff = StringUtils::replace_default(str_buff);
-        let iter = str_buff.split_whitespace();
-        let vec: Vec<&str> = iter.collect();
-        self.word_num = vec.len();
-        for i in 0..vec.len() {
-            let v = vec[i].to_owned();
-            match self.map.get_mut(&v) {
-                Some(r) => {r.push(i);}
-                None => {
-                    self.map.insert(v.to_owned(), vec![i]);
-                }
-            }
-        }
-    }
-
-    fn data(&self) -> &HashMap<String,Vec<usize>>{
-        &self.map
-    }
-
-    fn name(&self) -> String {
-        self.file_processor.name()
+        self.name.clone()
     }
 }

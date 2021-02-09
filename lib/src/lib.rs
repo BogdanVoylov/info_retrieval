@@ -3,6 +3,4 @@ pub mod main {
     pub mod collection;
 
     pub mod file_processor;
-
-   
 }
