@@ -17,25 +17,27 @@ pub struct OndiskIndex {
     map: BTreeMap<String, HashSet<String>>,
     size:usize,
     name: String,
+    aliases: HashMap<String,String>,
     size_limit: usize,
     delta: usize,
 }
 
 impl OndiskIndex {
-    pub fn new(name: String, value:String, size_limit: usize) -> Self {
+    pub fn new(name: String, aliases:HashMap<String,String>, size_limit: usize) -> Self {
         Self {
             map: BTreeMap::new(),
             size:0,
             name,
+            aliases,
             size_limit,
             delta: 10000,
         }
     }
 
-    pub fn proccess(&mut self, input_names: Vec<String>) -> Vec<String> {
+    pub fn proccess(&mut self,) -> Vec<String> {
         println!("started processing {} {}", self.name, self.size_limit, );
         let mut res_vec = Vec::<String>::new();
-        for (i, name) in input_names.iter().enumerate() {
+        for (i, (name, alias)) in self.aliases.clone().iter().enumerate() {
             println!("processing file {} {} {}", name, self.map.len(), self.size);
             if self.size_limit < self.delta + self.size  {
                 println!("extended file limit");
@@ -65,7 +67,7 @@ impl OndiskIndex {
     }
 
     fn extend_from_sfp(&mut self, sfp: SingleFileProcessor) {
-        let f_name = sfp.name();
+        let f_name = self.aliases.get(&sfp.name()).unwrap();
         self.size += sfp.data().len();
         for word in sfp.data() {
             let set = self.map.entry(word.clone()).or_insert(HashSet::new());
