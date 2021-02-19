@@ -1,42 +1,40 @@
-use lib::main::collection::{kgram_index::*, prefix_index::*, *, permuterm_index::*};
+use lib::main::collection::{kgram_index::*, permuterm_index::*, *};
 
 use std::io::{prelude::*, stdin, stdout, LineWriter};
-use std::{env, fs, fs::File, time::SystemTime};
+use std::{env, fs, fs::File, time::SystemTime, mem::*};
+
+use lib::main::collection::ondisk_index::concurrent_ondisk_index::*;
+
+const GB_SIZE:usize = 1073741824;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    println!("{:?}", args);
+    let v = read_dir_recur(Path::new("/mnt/store/gutenberg"));
+    let v_len = v.len();
 
-    if args.contains(&"-p".to_owned()){
-        process_prefix();
-    } else if args.contains(&"-k".to_owned()){
-        process_kgram();
-    } else {
-        process_permuterm();
-    }
+    let mut index = ConcurrentOndiskIndex::new(v);
+    /* index.process_concurrent(&v, 0); */
+    index.reduce(read_dir_recur(Path::new("cache")));
 
     /*  main::process_concurrent(&files, BUFF_SIZE) */
 }
+use std::fs::*;
+use std::path::Path;
 
-fn process_prefix() {
-    let paths = fs::read_dir("./data").unwrap();
+fn read_dir_recur(dir: &Path) -> Vec<String> {
+    let paths = fs::read_dir(dir).unwrap();
     let mut files = Vec::<String>::new();
-    for path in paths {
-        files.push(path.unwrap().path().to_str().unwrap().to_owned());
+    for v in paths {
+        let path = v.unwrap().path();
+
+        if path.is_dir() {
+            files.append(&mut read_dir_recur(&path));
+        } else {
+            files.push(path.to_str().unwrap().to_owned());
+        }
     }
-
-    let mut index = PrefixIndex::new();
-
-    index.process_concurrent(&files, 0);
-
-    loop {
-        let mut q = r_l("> ");
-        q.truncate(q.len() - 1);
-        let res = index.get(q);
-        println!("{}", res.len());
-        println!("{:?}", res);
-    }
+    files
 }
 
 fn process_kgram() {
@@ -61,7 +59,7 @@ fn process_kgram() {
         let end = ms();
         println!("{}", res_str);
         println!("result len: {}", res.len());
-        println!("completed in {} ms",end-start);
+        println!("completed in {} ms", end - start);
     }
 }
 
@@ -87,13 +85,11 @@ fn process_permuterm() {
         let end = ms();
         println!("{}", res_str);
         println!("result len: {}", res.len());
-        println!("completed in {} ms",end-start);
+        println!("completed in {} ms", end - start);
     }
-
-
 }
 
-fn save_index<T:MultipleFileIndex>(index:&T){
+fn save_index<T: MultipleFileIndex>(index: &T) {
     let j = index.serialize();
 
     let file = File::create(index.name() + ".json").unwrap();

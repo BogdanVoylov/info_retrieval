@@ -1,5 +1,6 @@
 use std::{collections::HashSet, string::String, vec::Vec};
 use unicode_segmentation::UnicodeSegmentation;
+use rand::{distributions::Alphanumeric, Rng};
 
 pub struct StringUtils {}
 
@@ -8,7 +9,7 @@ impl StringUtils {
         let s = s.replace(
             &[
                 '(', ')', '-', ',', '\"', '.', ';', ':', '\'', '"', '?', '”', '“', '!', '/', '[',
-                ']', '{', '}', '=', '&', '$',
+                ']', '{', '}', '=', '&', '$', '#', '*'
             ][..],
             " ",
         )
@@ -42,5 +43,29 @@ impl StringUtils {
                 }
             })
             .collect()
+    }
+
+    pub fn random_string(len:usize) -> String  {
+        rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(len)
+        .map(char::from)
+        .collect()
+    }
+
+    pub fn serialize_set(set:&HashSet<String>) -> String {
+        let mut res = "[".to_owned();
+        for v in set {
+            res.push('\"');
+            res.push_str(v);
+            res.push('\"');
+            res.push(',')
+        }
+        let len = res.len();
+        if len > 1 {
+            res.pop();
+        }
+        res.push(']');
+        res
     }
 }

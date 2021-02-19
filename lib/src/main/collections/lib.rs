@@ -3,9 +3,10 @@ pub mod kgram_index;
 #[path = "./process_strategies/lib.rs"]
 pub mod process_strategies;
 pub mod string_utils;
-pub mod prefix_trie;
-pub mod prefix_index;
 pub mod permuterm_index;
+#[path = "./ondisk_index/lib.rs"]
+pub mod ondisk_index;
+pub mod parallel_utils;
 pub trait MultipleFileIndex {
     fn process_concurrent(&mut self, input_names: &Vec<String>, buff_size: usize);
     fn serialize(&self)->String;
