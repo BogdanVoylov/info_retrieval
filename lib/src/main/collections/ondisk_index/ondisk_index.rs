@@ -14,16 +14,16 @@ use crate::main::{
 };
 
 pub struct OndiskIndex {
-    map: BTreeMap<String, HashSet<String>>,
+    map: BTreeMap<String, HashSet<usize>>,
     size:usize,
     name: String,
-    aliases: HashMap<String,String>,
+    aliases: HashMap<String,usize>,
     size_limit: usize,
     delta: usize,
 }
 
 impl OndiskIndex {
-    pub fn new(name: String, aliases:HashMap<String,String>, size_limit: usize) -> Self {
+    pub fn new(name: String, aliases:HashMap<String,usize>, size_limit: usize) -> Self {
         Self {
             map: BTreeMap::new(),
             size:0,

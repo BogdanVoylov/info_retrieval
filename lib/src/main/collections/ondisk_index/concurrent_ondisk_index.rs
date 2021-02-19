@@ -3,20 +3,21 @@ use std::collections::*;
 
 use crate::main::collection::string_utils::*;
 
-type Collection = HashMap<String,String>;
+type Collection = HashMap<String,usize>;
 
 pub struct ConcurrentOndiskIndex {
+    c_vec:Vec<String>,
     collection: Collection,
 }
 
-const buff_size: usize = 536870912;
+const buff_size: usize = 13687090;
 impl ConcurrentOndiskIndex {
     pub fn new(c: Vec<String>) -> Self {
         let mut collection = Collection::new();
         for i in 0..c.len() {
-            collection.insert(c[i],i.to_string());
+            collection.insert(c[i].clone(),i);
         }
-        Self { collection }
+        Self { c_vec:c, collection }
     }
 
     pub fn process_concurrent(&mut self) {
