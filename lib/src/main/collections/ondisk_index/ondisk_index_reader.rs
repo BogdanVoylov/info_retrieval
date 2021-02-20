@@ -10,16 +10,18 @@ pub struct OndiskIndexReader {
     empty: bool,
     key: String,
     value: String,
+    parsed_value: HashSet<u32>
 }
 
 impl OndiskIndexReader {
-    pub fn new(file_name: String) -> Self {
+    pub fn new(file_name: &String) -> Self {
         let reader: BufReader<File> = BufReader::new(File::open(file_name).unwrap());
         let mut res = Self {
             reader,
             empty: false,
             key: String::new(),
             value:String::new(),
+            parsed_value: HashSet::<u32>::new()
         };
         res.read();
         res
@@ -46,12 +48,13 @@ impl OndiskIndexReader {
 
                 self.key = key;
                 self.value = buf;
+                self.parsed_value = serde_json::from_str(self.value.as_str()).unwrap();
             }
             Err(e) => println!("{}", e),
         };
     }
 
-    pub fn readable(&self) -> bool {
+    pub fn empty(&self) -> bool {
         self.empty
     }
 
@@ -68,8 +71,12 @@ impl OndiskIndexReader {
         &self.value
     }
 
-    pub fn parsed_value(&self) -> HashSet<String> {
-        serde_json::from_str(self.value.as_str()).unwrap()
+    pub fn parsed_value(&self) -> HashSet<u32> {
+        self.parsed_value.clone()
+    }
+
+    pub fn boxed_value(&self) -> Box<HashSet<u32>> {
+        Box::new(self.parsed_value())
     }
 
     pub fn clone_key(&self) -> String {

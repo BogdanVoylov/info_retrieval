@@ -4,3 +4,5 @@ res.json
 *.zip
 *.json
 cache*
+res
+index

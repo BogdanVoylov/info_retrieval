@@ -10,17 +10,56 @@ use super::{ondisk_index::*, ondisk_index_reader::*};
 use crate::main::collection::string_utils::*;
 
 impl OndiskIndexReducer {
-    pub fn help_reduce(i1: String, i2: String, res_name: String) {
+    pub fn help_reduce(i_names: Vec<String>, res_name: String) {
+        let mut v: Vec<OndiskIndexReader> = i_names.iter().map(|x|{OndiskIndexReader::new(x)}).collect();
+        let o = File::create("res/k").unwrap();
+        let mut k_o = LineWriter::new(o);
+        let o = File::create("res/v").unwrap();
+        let mut v_o = LineWriter::new(o);
+
+        while v.len() > 0 {
+            let mut k = &"~".to_owned();
+            let mut idxs = Vec::<usize>::new();
+            let mut vls = HashSet::<u32>::new();
+            for i in 0..v.len() {
+                let item = &v[i];
+                if item.key() < k {
+                    k = item.key();
+                    idxs = vec![i];
+                    vls = item.parsed_value();
+                } else if item.key() == k {
+                    idxs.push(i);
+                    vls.extend(item.parsed_value());
+                }
+            }
+
+            k_o.write_all(k.as_bytes());
+            let mut vl = serde_json::to_string(&vls).unwrap();
+            vl.push('\n');
+            v_o.write_all(vl.as_bytes());
+
+            for i in idxs {
+                let item = &mut v[i];
+                item.process();
+                if item.empty() {
+                    println!("removed");
+                    v.remove(i);
+                }
+            }
+        }
+    }
+
+    pub fn help_reduce_p(i1: String, i2: String, res_name: String) {
         println!("\n ----- res: {} -----",res_name);
         let o_f = File::create(res_name.clone()).unwrap();
         let mut o = LineWriter::new(o_f);
-        let mut i1 = OndiskIndexReader::new(i1);
-        let mut i2 = OndiskIndexReader::new(i2);
+        let mut i1 = OndiskIndexReader::new(&i1);
+        let mut i2 = OndiskIndexReader::new(&i2);
 
         let i1_eof = false;
         let i2_eof = false;
 
-        while !i1.readable() || !i2.readable() {
+        while !i1.empty() || !i2.empty() {
             let i1_k = i1.key();
             let i2_k = i2.key();
             // println!("names:{} res_name:{} k1:{} k2:{}", names, res_name, i1_k, i2_k);
@@ -46,10 +85,14 @@ impl OndiskIndexReducer {
 
         println!("almost completed");
 
-        if i1.readable() {
-            o.write_all(i1.rest().as_slice());
-        } else if i2.readable() {
+        if i1.empty() {
             o.write_all(i2.rest().as_slice());
+        } else if i2.empty() {
+            o.write_all(i1.rest().as_slice());
         }
     }
+
 }
+
+/* 
+ */

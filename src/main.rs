@@ -14,9 +14,9 @@ fn main() {
     let v_len = v.len();
 
     let mut index = ConcurrentOndiskIndex::new(v);
-    index.process_concurrent();
-    /* index.reduce(read_dir_recur(Path::new("cache")));
- */
+    /* index.process_concurrent(); */
+    index.reduce(read_dir_recur(Path::new("cache")));
+
     /*  main::process_concurrent(&files, BUFF_SIZE) */
 }
 use std::fs::*;
