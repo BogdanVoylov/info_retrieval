@@ -1,11 +1,7 @@
 use std::{
-    collections::*, 
-    fs::{File},
-    io::{
-        LineWriter,
-        prelude::*
-    }
-
+    collections::*,
+    fs::File,
+    io::{prelude::*, LineWriter},
 };
 
 use crate::main::{
@@ -15,18 +11,18 @@ use crate::main::{
 
 pub struct OndiskIndex {
     map: BTreeMap<String, HashSet<usize>>,
-    size:usize,
+    size: usize,
     name: String,
-    aliases: HashMap<String,usize>,
+    aliases: HashMap<String, usize>,
     size_limit: usize,
     delta: usize,
 }
 
 impl OndiskIndex {
-    pub fn new(name: String, aliases:HashMap<String,usize>, size_limit: usize) -> Self {
+    pub fn new(name: String, aliases: HashMap<String, usize>, size_limit: usize) -> Self {
         Self {
             map: BTreeMap::new(),
-            size:0,
+            size: 0,
             name,
             aliases,
             size_limit,
@@ -34,19 +30,14 @@ impl OndiskIndex {
         }
     }
 
-    pub fn proccess(&mut self,) -> Vec<String> {
-        println!("started processing {} {}", self.name, self.size_limit, );
+    pub fn proccess(&mut self) -> Vec<String> {
+        println!("started processing {} {}", self.name, self.size_limit,);
         let mut res_vec = Vec::<String>::new();
         for (i, (name, alias)) in self.aliases.clone().iter().enumerate() {
             println!("processing file {} {} {}", name, self.map.len(), self.size);
-            if self.size_limit < self.delta + self.size  {
+            if self.size_limit < self.delta + self.size {
                 println!("extended file limit");
-                let name = format!(
-                    "{}_{}_{}",
-                    self.name,
-                    i,
-                    StringUtils::random_string(7)
-                );
+                let name = format!("{}_{}_{}", self.name, i, StringUtils::random_string(7));
                 self.cache(name.clone());
                 res_vec.push(name);
             }
@@ -70,22 +61,24 @@ impl OndiskIndex {
         let f_name = self.aliases.get(&sfp.name()).unwrap();
         self.size += sfp.data().len();
         for word in sfp.data() {
-            let set = self.map.entry(word.clone()).or_insert(HashSet::new());
-            set.insert(f_name.clone());
+            if word.len() < 15 {
+                let set = self.map.entry(word.clone()).or_insert(HashSet::new());
+                set.insert(f_name.clone());
+            }
         }
     }
 
     fn cache(&mut self, name: String) {
-        println!("caching size {}",self.size);
+        println!("caching size {}", self.size);
         let mut file = File::create(format!("cache/{}", name)).unwrap();
         let mut output = LineWriter::new(file);
         for (k, v) in &self.map {
             let v = serde_json::to_string(v).unwrap();
-            output.write_all(format!("{}\n",k).as_bytes());
-            output.write_all(format!("{}\n",v).as_bytes());
+            output.write_all(format!("{}\n", k).as_bytes());
+            output.write_all(format!("{}\n", v).as_bytes());
         }
         self.map.clear();
         self.size = 0;
-        println!("after cache {}",self.map.len());
+        println!("after cache {}", self.map.len());
     }
 }

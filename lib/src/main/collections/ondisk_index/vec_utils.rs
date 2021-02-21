@@ -10,3 +10,10 @@ pub fn chunkinfy(vec_len: usize, chunk_num: usize) -> Vec<usize> {
     res_vec[chunk_num-1] = last_chunk_size+chunk_size;
     res_vec
 }
+
+pub fn remove_multiple<T>(source: &mut Vec<T>, indices_to_remove: &[usize]) -> Vec<T> {
+    indices_to_remove.iter()
+        .copied()
+        .map(|i| source.swap_remove(i))
+        .collect()
+}

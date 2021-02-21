@@ -10,6 +10,7 @@ pub struct OndiskIndexReader {
     empty: bool,
     key: String,
     value: String,
+    name:String,
     parsed_value: HashSet<u32>
 }
 
@@ -21,6 +22,7 @@ impl OndiskIndexReader {
             empty: false,
             key: String::new(),
             value:String::new(),
+            name:file_name.clone(),
             parsed_value: HashSet::<u32>::new()
         };
         res.read();
@@ -45,7 +47,6 @@ impl OndiskIndexReader {
                     self.empty = true;
                     return;
                 }
-
                 self.key = key;
                 self.value = buf;
                 self.parsed_value = serde_json::from_str(self.value.as_str()).unwrap();

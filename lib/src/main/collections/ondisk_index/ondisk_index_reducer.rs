@@ -5,7 +5,7 @@ use std::{
     io::{prelude::*, LineWriter},
     time::SystemTime,
 };
-
+use std::ptr;
 use super::{ondisk_index::*, ondisk_index_reader::*};
 use crate::main::collection::string_utils::*;
 
@@ -18,10 +18,10 @@ impl OndiskIndexReducer {
         let mut v_o = LineWriter::new(o);
 
         while v.len() > 0 {
-            let mut k = &"~".to_owned();
-            let mut idxs = Vec::<usize>::new();
-            let mut vls = HashSet::<u32>::new();
-            for i in 0..v.len() {
+            let mut k = v[0].key();
+            let mut idxs = vec![0];
+            let mut vls = v[0].parsed_value();
+            for i in 1..v.len() {
                 let item = &v[i];
                 if item.key() < k {
                     k = item.key();
@@ -33,6 +33,9 @@ impl OndiskIndexReducer {
                 }
             }
 
+            /* println!("k {}", k);
+ */
+
             k_o.write_all(k.as_bytes());
             let mut vl = serde_json::to_string(&vls).unwrap();
             vl.push('\n');
@@ -42,10 +45,10 @@ impl OndiskIndexReducer {
                 let item = &mut v[i];
                 item.process();
                 if item.empty() {
-                    println!("removed");
-                    v.remove(i);
+                    println!("empty");
                 }
             }
+            v.retain(|x|!x.empty())
         }
     }
 
@@ -94,5 +97,3 @@ impl OndiskIndexReducer {
 
 }
 
-/* 
- */
