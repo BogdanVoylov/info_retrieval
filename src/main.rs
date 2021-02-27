@@ -7,7 +7,15 @@ use lib::main::collection::ondisk_index::concurrent_ondisk_index::*;
 
 const GB_SIZE:usize = 1073741824;
 
+use std::mem;
+use std::io::Cursor;
+
+use varuint::*;
+
+
+
 fn main() {
+
     let args: Vec<String> = env::args().collect();
 
     let v = read_dir_recur(Path::new("/mnt/store/gutenberg"));

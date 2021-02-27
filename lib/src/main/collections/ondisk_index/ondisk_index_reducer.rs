@@ -6,7 +6,7 @@ use std::{
     time::SystemTime,
 };
 use std::ptr;
-use super::{ondisk_index::*, ondisk_index_reader::*};
+use super::{ondisk_index::*, ondisk_index_reader::*, vec_utils::*};
 use crate::main::collection::string_utils::*;
 
 impl OndiskIndexReducer {
@@ -37,9 +37,9 @@ impl OndiskIndexReducer {
  */
 
             k_o.write_all(k.as_bytes());
-            let mut vl = serde_json::to_string(&vls).unwrap();
-            vl.push('\n');
-            v_o.write_all(vl.as_bytes());
+            let mut vl = vb_encode(vls).into_inner();
+            vl.push(0x0a); // \n
+            v_o.write_all(&vl);
 
             for i in idxs {
                 let item = &mut v[i];
@@ -73,9 +73,9 @@ impl OndiskIndexReducer {
             } else if i1_k == i2_k {
                 let mut value = i1.parsed_value();
                 value.extend(i2.parsed_value());
-                let value = serde_json::to_string(&value).unwrap();
+                let value = vb_encode(value).into_inner();
                 o.write_all(i1_k.as_bytes());
-                o.write_all(value.as_bytes());
+                o.write_all(&value);
                 i1.process();
                 i2.process();
             } else {

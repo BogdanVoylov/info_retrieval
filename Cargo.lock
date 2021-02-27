@@ -96,19 +96,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"
 
 [[package]]
-name = "fuzzyhash"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fb6c4351f4f134772edf9bcd17de13b7fbcb2c56928b440d6823bd4dc9ebd80"
-
-[[package]]
 name = "information_retrieval"
 version = "0.1.0"
 dependencies = [
- "fuzzyhash",
  "lib",
  "serde",
  "serde_json",
+ "varuint",
 ]
 
 [[package]]
@@ -127,6 +121,7 @@ dependencies = [
  "serde",
  "serde_json",
  "unicode-segmentation",
+ "varuint",
 ]
 
 [[package]]
@@ -240,6 +235,12 @@ name = "unicode-xid"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
+
+[[package]]
+name = "varuint"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "896414bb0f21aba00ff26b0a8a3679331b5a86886f217c9d9396b919a7bf4ac6"
 
 [[package]]
 name = "winapi"
